@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DBT_PROFILES_DIR: ${{ github.workspace }}/dbt
-      KAGGLE_API_TOKEN: ${{ KGAT_53498fe9341894e3ba0f8c1c0fdd70d7 }}
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
 
     steps:
       - name: Checkout
