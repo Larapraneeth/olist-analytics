@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      DBT_PROFILES_DIR: ${{ github.workspace }}/dbt
+      KAGGLE_API_TOKEN: ${{ KGAT_53498fe9341894e3ba0f8c1c0fdd70d7 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download raw data from Kaggle
+        run: python ingestion/download_data.py
+
+      - name: Ingest raw data into DuckDB (dlt)
+        run: python ingestion/ingest.py
+
+      - name: Build and test all dbt models
+        working-directory: dbt
+        run: |
+          dbt deps || true
+          dbt build
+
+      - name: Lint SQL (sqlfluff)
+        run: sqlfluff lint dbt/models

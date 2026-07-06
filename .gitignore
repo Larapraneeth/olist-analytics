@@ -1,0 +1,26 @@
+# data & warehouse artifacts (never commit data)
+data/
+warehouse/*.duckdb
+warehouse/*.wal
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# dlt
+.dlt/secrets.toml
+*.duckdb
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# editor
+.vscode/
+.idea/
+
+exports/
+*.pbix

@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: fct_orders
+    description: Order-grain fact table with revenue and delivery metrics.
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+      - name: order_total
+        tests: [not_null]

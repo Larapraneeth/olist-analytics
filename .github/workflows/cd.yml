@@ -1,0 +1,80 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "30 2 * * *" # daily production run at 02:30 UTC
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DBT_PROFILES_DIR: ${{ github.workspace }}/dbt
+      KAGGLE_API_TOKEN: ${{ KGAT_53498fe9341894e3ba0f8c1c0fdd70d7 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download raw data from Kaggle
+        run: python ingestion/download_data.py
+
+      - name: Ingest raw data into DuckDB (dlt)
+        run: python ingestion/ingest.py
+
+      - name: Build and test all dbt models (production)
+        working-directory: dbt
+        run: |
+          dbt deps || true
+          dbt build
+
+      - name: Generate dbt documentation site
+        working-directory: dbt
+        run: dbt docs generate --static
+
+      - name: Upload production warehouse artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: olist-warehouse
+          path: warehouse/olist.duckdb
+          retention-days: 7
+
+      - name: Prepare Pages content
+        run: |
+          mkdir -p site
+          cp dbt/target/static_index.html site/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy dbt docs to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
